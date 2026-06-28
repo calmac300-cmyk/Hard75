@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hard75 Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #e8612a;
+      --text: #e0e0e0;
+      --muted: #888;
+      --success: #4caf50;
+      --danger: #ef5350;
+      --discord: #5865F2;
+      --sheets: #0f9d58;
+    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    header h1 { font-size: 1.3rem; font-weight: 800; color: var(--accent); letter-spacing: 2px; }
+    .day-badge { background: var(--accent); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; }
+
+    nav { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 53px; z-index: 9; }
+    nav button { background: none; border: none; color: var(--muted); padding: 13px 20px; cursor: pointer; font-size: 0.875rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.15s; flex: 1; }
+    nav button:hover { color: var(--text); }
+    nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab { display: none; padding: 20px 16px; max-width: 860px; margin: 0 auto; }
+    .tab.active { display: block; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+    .card-title { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 10px; text-align: center; }
+    .stat-value { font-size: 1.7rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .stat-label { font-size: 0.68rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .check-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 8px; cursor: pointer; transition: background 0.1s; margin-bottom: 6px; background: var(--bg); }
+    .check-item:hover { background: #1e1e1e; }
+    .check-item.done { opacity: 0.5; }
+    .check-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; flex-shrink: 0; }
+    .check-item label { cursor: pointer; font-size: 0.9rem; line-height: 1.3; }
+    .check-item.done label { text-decoration: line-through; }
+    .check-done-all { color: var(--success); font-weight: 600; text-align: center; padding: 10px; font-size: 0.9rem; }
+
+    .progress-bar { background: var(--border); border-radius: 20px; height: 7px; overflow: hidden; margin-top: 14px; }
+    .progress-fill { background: var(--success); height: 100%; border-radius: 20px; transition: width 0.4s ease; }
+    .progress-label { font-size: 0.8rem; color: var(--muted); margin-top: 5px; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+    .metric-input-group { display: flex; flex-direction: column; gap: 5px; }
+    .metric-input-group label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-input-row { display: flex; gap: 6px; align-items: center; }
+    .metric-input-row input { flex: 1; min-width: 0; }
+
+    .form-row { display: grid; gap: 10px; align-items: end; }
+    .form-row-3 { grid-template-columns: 1fr 1fr auto; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input, .field select, input.bare, select.bare { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 0.9rem; outline: none; width: 100%; }
+    .field input:focus, .field select:focus, input.bare:focus, select.bare:focus { border-color: var(--accent); }
+    .field input[type="url"], .field input[type="date"] { font-size: 0.85rem; }
+
+    .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.15s; white-space: nowrap; }
+    .btn-primary   { background: var(--accent);   color: white; }
+    .btn-primary:hover   { filter: brightness(1.1); }
+    .btn-secondary { background: var(--border);   color: var(--text); }
+    .btn-secondary:hover { background: #333; }
+    .btn-icon { background: var(--accent); color: white; padding: 9px 13px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; line-height: 1; transition: filter 0.15s; flex-shrink: 0; }
+    .btn-icon:hover { filter: brightness(1.1); }
+
+    .sync-btn { width: 100%; padding: 13px 20px; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: filter 0.15s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sync-btn:hover:not(:disabled) { filter: brightness(1.1); }
+    .sync-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .sync-btn.discord { background: var(--discord); }
+    .sync-btn.sheets  { background: var(--sheets); }
+
+    .log-pill { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg); border-radius: 8px; font-size: 0.875rem; margin-bottom: 6px; }
+    .log-pill .val  { font-weight: 700; }
+    .log-pill .unit { color: var(--muted); font-weight: 400; margin-left: 3px; }
+
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .data-table th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .data-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--bg); }
+    .type-badge { font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .type-badge.metric   { background: rgba(88,101,242,0.2); color: #8b97f5; }
+    .type-badge.activity { background: rgba(232,97,42,0.2);  color: #e8612a; }
+    .del-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1; }
+    .del-btn:hover { background: rgba(239,83,80,0.1); }
+
+    .chart-wrap { position: relative; height: 260px; }
+
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.82rem; display: flex; align-items: center; gap: 7px; }
+    .tag .unit-label { color: var(--muted); }
+    .tag .rm { color: var(--danger); cursor: pointer; font-size: 1rem; line-height: 1; }
+
+    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+    /* Apps Script code block */
+    .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.78rem; color: #b0d0b0; overflow-x: auto; white-space: pre; line-height: 1.6; margin-top: 10px; }
+    .copy-btn { background: var(--border); border: none; color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: background 0.15s; }
+    .copy-btn:hover { background: #444; }
+
+    /* Config notice badge */
+    .config-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 10px; margin-left: 8px; }
+    .config-badge.hardcoded { background: rgba(15,157,88,0.2); color: #4caf50; }
+    .config-badge.manual    { background: rgba(232,97,42,0.15); color: #e8612a; }
+
+    .filter-row { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #2a2a2a; color: var(--text); padding: 11px 18px; border-radius: 10px; font-size: 0.875rem; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 1000; border-left: 3px solid var(--accent); max-width: 280px; }
+    .toast.show { opacity: 1; }
+
+    .empty { text-align: center; color: var(--muted); padding: 32px 20px; font-size: 0.875rem; }
+    .badge-complete { color: var(--success); font-weight: 600; }
+    .badge-partial  { color: var(--muted); }
+
+    @media (max-width: 580px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .form-row-3 { grid-template-columns: 1fr 1fr; }
+      .form-row-3 .btn { grid-column: 1 / -1; }
+      nav button { font-size: 0.78rem; padding: 12px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>HARD75</h1>
+  <span class="day-badge" id="dayBadge">Day —</span>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('today', this)">Today</button>
+  <button onclick="showTab('log', this)">Log</button>
+  <button onclick="showTab('charts', this)">Charts</button>
+  <button onclick="showTab('settings', this)">Settings</button>
+</nav>
+
+<!-- ── TODAY ── -->
+<div id="tab-today" class="tab active">
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-value" id="statStreak">—</div><div class="stat-label">Streak</div></div>
+    <div class="stat-card"><div class="stat-value" id="statDone">—</div><div class="stat-label">Days Done</div></div>
+    <div class="stat-card"><div class="stat-value" id="statTasks">0/6</div><div class="stat-label">Today</div></div>
+    <div class="stat-card"><div class="stat-value" id="statLeft">—</div><div class="stat-label">Days Left</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Hard75 Checklist</div>
+    <div id="checklist"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-label" id="progressLabel">0 of 6 complete</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Metrics</div>
+    <div class="metrics-grid" id="metricsForm"></div>
+    <div id="todayMetricLogs" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Activities</div>
+    <div class="form-row form-row-3">
+      <div class="field">
+        <label>Activity</label>
+        <select id="activitySelect"></select>
+      </div>
+      <div class="field">
+        <label>Value</label>
+        <input type="number" id="activityValue" placeholder="0" step="any" onkeydown="if(event.key==='Enter') logActivity()">
+      </div>
+      <button class="btn btn-primary" onclick="logActivity()" style="margin-top:22px">Add</button>
+    </div>
+    <div id="todayActivityLogs" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Share &amp; Sync</div>
+    <button class="sync-btn discord" id="discordBtn" onclick="sendDiscord()">
+      📣 &nbsp;Post Day Completion to Discord
+    </button>
+    <button class="sync-btn sheets" id="sheetsBtn" onclick="syncToSheets()">
+      📊 &nbsp;Sync Today to Google Sheets
+    </button>
+  </div>
+
+</div>
+
+<!-- ── LOG ── -->
+<div id="tab-log" class="tab">
+
+  <div class="card">
+    <div class="card-title">Activity &amp; Metric History</div>
+    <div class="filter-row" style="justify-content:space-between">
+      <div style="display:flex;gap:8px">
+        <select class="bare" id="filterType" onchange="renderLog()" style="width:auto">
+          <option value="">All Types</option>
+          <option value="metric">Metrics</option>
+          <option value="activity">Activities</option>
+        </select>
+        <select class="bare" id="filterName" onchange="renderLog()" style="width:auto">
+          <option value="">All</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" onclick="exportCSV()" style="font-size:0.8rem;padding:7px 14px">⬇ Export CSV</button>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Type</th><th>Name</th><th>Value</th><th></th></tr></thead>
+      <tbody id="logBody"></tbody>
+    </table>
+    <div id="logEmpty" class="empty" style="display:none">No data logged yet.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Daily Check-in History</div>
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Day #</th><th>Tasks Done</th><th>Status</th></tr></thead>
+      <tbody id="checkHistBody"></tbody>
+    </table>
+    <div id="checkHistEmpty" class="empty" style="display:none">No check-in history yet.</div>
+  </div>
+
+</div>
+
+<!-- ── CHARTS ── -->
+<div id="tab-charts" class="tab">
+  <div class="card">
+    <div class="card-title">Trend Chart</div>
+    <div class="filter-row">
+      <select class="bare" id="chartItem" onchange="renderActivityChart()" style="width:auto"></select>
+    </div>
+    <div class="chart-wrap"><canvas id="actChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Daily Task Completion</div>
+    <div class="chart-wrap"><canvas id="compChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ── SETTINGS ── -->
+<div id="tab-settings" class="tab">
+
+  <div class="card">
+    <div class="card-title">Challenge Setup</div>
+    <div class="field">
+      <label>Start Date (Day 0)</label>
+      <input type="date" id="startDate" onchange="saveKey('startDate', this.value); refreshDayBadge();">
+    </div>
+    <div class="hint" id="startDateHint">Set to today — today becomes Day 0, tomorrow is Day 1, up to Day 75.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Discord Webhook <span id="discordBadge"></span></div>
+    <div class="field">
+      <label>Webhook URL <span style="color:var(--muted);font-weight:400">(leave blank if hardcoded in CONFIG)</span></label>
+      <input type="url" id="webhookInput" placeholder="https://discord.com/api/webhooks/..." onchange="saveKey('discordWebhook', this.value)">
+    </div>
+    <div class="hint">Server Settings → Integrations → Webhooks → New Webhook → Copy URL.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Google Sheets Sync <span id="sheetsBadge"></span></div>
+    <div class="field">
+      <label>Apps Script Web App URL <span style="color:var(--muted);font-weight:400">(leave blank if hardcoded in CONFIG)</span></label>
+      <input type="url" id="sheetsInput" placeholder="https://script.google.com/macros/s/..." onchange="saveKey('sheetsUrl', this.value)">
+    </div>
+    <div class="hint" style="margin-bottom:12px">
+      One-time setup: open your Google Sheet → <strong>Extensions → Apps Script</strong> → paste the code below → <strong>Deploy → New deployment → Web app</strong> → set "Who has access" to <strong>Anyone</strong> → copy the URL above.
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <span style="font-size:0.78rem;color:var(--muted);font-weight:600">PASTE THIS INTO APPS SCRIPT</span>
+      <button class="copy-btn" onclick="copyScript()">Copy</button>
+    </div>
+    <div class="code-block" id="appsScriptCode"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Metrics</div>
+    <div class="hint" style="margin-bottom:14px">Daily measurements — Weight, Body Fat %, etc.</div>
+    <div class="form-row form-row-3">
+      <div class="field"><label>Name</label><input type="text" id="newMetricName" placeholder="e.g. Body Fat" onkeydown="if(event.key==='Enter') addItem('metric')"></div>
+      <div class="field"><label>Unit</label><input type="text" id="newMetricUnit" placeholder="e.g. %, lbs" onkeydown="if(event.key==='Enter') addItem('metric')"></div>
+      <button class="btn btn-primary" onclick="addItem('metric')" style="margin-top:22px">Add</button>
+    </div>
+    <div class="tag-list" id="metricTags"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Activities</div>
+    <div class="hint" style="margin-bottom:14px">Things you do — Steps, Biking, Boxing, etc.</div>
+    <div class="form-row form-row-3">
+      <div class="field"><label>Name</label><input type="text" id="newActName" placeholder="e.g. Boxing" onkeydown="if(event.key==='Enter') addItem('activity')"></div>
+      <div class="field"><label>Unit</label><input type="text" id="newActUnit" placeholder="e.g. min, miles, steps" onkeydown="if(event.key==='Enter') addItem('activity')"></div>
+      <button class="btn btn-primary" onclick="addItem('activity')" style="margin-top:22px">Add</button>
+    </div>
+    <div class="tag-list" id="activityTags"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG — fill these in once, every device that loads this page gets them
+// ═══════════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  startDate:      '2026-06-28',
+  discordWebhook: 'https://discord.com/api/webhooks/1520931387215974440/0gekGQWsk6XdlXmgIk2_3OOWneUUcTm4N-b28ldHNr6jzI8hrI-gxWQ2UvLBVNLDX0uQ',
+  sheetsUrl:      'https://script.google.com/macros/s/AKfycbx9bufq2Z_4K3aNOkzbSodeQDVnUk4rr7hZEXpK9tcohez32l6DMmEH3Qz9vX6t1CqH/exec',
+};
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Storage ──────────────────────────────────────────────────────────────────
+const LS = {
+  get(k, def) { try { const v = localStorage.getItem(k); return v != null ? JSON.parse(v) : def; } catch { return def; } },
+  set(k, v)   { localStorage.setItem(k, JSON.stringify(v)); },
+};
+function saveKey(k, v) { LS.set(k, v); }
+
+// CONFIG takes priority; localStorage acts as a per-device override
+function cfg(key) { return CONFIG[key] || LS.get(key, ''); }
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const TASKS = [
+  { id: 'w1',      label: 'Workout 1 — 45 minutes' },
+  { id: 'w2',      label: 'Workout 2 — 45 min, must be outdoors' },
+  { id: 'diet',    label: 'Stick to diet (no cheat meals, no alcohol)' },
+  { id: 'water',   label: 'Drink 1 gallon of water' },
+  { id: 'reading', label: 'Read 10 pages of non-fiction' },
+  { id: 'photo',   label: 'Take a progress photo' },
+];
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+let actChartInst  = null;
+let compChartInst = null;
+
+// ── Apps Script code (displayed in Settings) ─────────────────────────────────
+const APPS_SCRIPT = `function doPost(e) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Hard75') || ss.insertSheet('Hard75');
+    var data  = JSON.parse(e.postData.contents);
+
+    // Write header row if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(data.headers);
+      sheet.getRange(1, 1, 1, data.headers.length)
+           .setFontWeight('bold')
+           .setBackground('#e8612a')
+           .setFontColor('#ffffff');
+    }
+
+    // Update existing row for this date, or append a new one
+    var dates = sheet.getRange('A:A').getValues().map(function(r){ return r[0]; });
+    var rowIdx = dates.indexOf(data.date);
+    if (rowIdx > 0) {
+      sheet.getRange(rowIdx + 1, 1, 1, data.row.length).setValues([data.row]);
+    } else {
+      sheet.appendRow(data.row);
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+// ── Items (metrics + activities) ─────────────────────────────────────────────
+function getAllItems() {
+  return LS.get('items', [
+    { name: 'Weight',      unit: 'lbs',   type: 'metric'   },
+    { name: 'Body Fat',    unit: '%',     type: 'metric'   },
+    { name: 'Steps',       unit: 'steps', type: 'activity' },
+    { name: 'Miles Biked', unit: 'miles', type: 'activity' },
+    { name: 'Boxing',      unit: 'min',   type: 'activity' },
+    { name: 'Swimming',    unit: 'laps',  type: 'activity' },
+  ]);
+}
+function saveAllItems(items) { LS.set('items', items); }
+function getByType(type) { return getAllItems().filter(i => i.type === type); }
+function unitOf(name)    { return (getAllItems().find(i => i.name === name) || {}).unit || ''; }
+function typeOf(name)    { return (getAllItems().find(i => i.name === name) || {}).type || 'activity'; }
+
+function addItem(type) {
+  const nameId = type === 'metric' ? 'newMetricName' : 'newActName';
+  const unitId = type === 'metric' ? 'newMetricUnit' : 'newActUnit';
+  const name   = document.getElementById(nameId).value.trim();
+  const unit   = document.getElementById(unitId).value.trim() || 'units';
+  if (!name) { toast('Enter a name'); return; }
+  const items = getAllItems();
+  if (items.find(i => i.name.toLowerCase() === name.toLowerCase())) { toast('Already exists'); return; }
+  items.push({ name, unit, type });
+  saveAllItems(items);
+  document.getElementById(nameId).value = '';
+  document.getElementById(unitId).value = '';
+  refreshAll();
+  toast('Added ' + name);
+}
+
+function removeItem(name) {
+  if (!confirm(`Remove "${name}"? Logged data stays.`)) return;
+  saveAllItems(getAllItems().filter(i => i.name !== name));
+  refreshAll();
+}
+
+// ── Day number ───────────────────────────────────────────────────────────────
+function getDayNum() {
+  const start = cfg('startDate');
+  if (!start) return null;
+  return Math.max(0, Math.round((new Date(TODAY) - new Date(start)) / 86400000));
+}
+
+function refreshDayBadge() {
+  const d = getDayNum();
+  document.getElementById('dayBadge').textContent = d != null ? `Day ${d}` : 'Set start date';
+  document.getElementById('statLeft').textContent  = d != null ? Math.max(0, 75 - d) : '—';
+}
+
+// ── Checklist ────────────────────────────────────────────────────────────────
+function getChecks(date) { return LS.get('chk_' + date, {}); }
+function saveChecks(date, c) { LS.set('chk_' + date, c); }
+
+function toggleCheck(id) {
+  const c = getChecks(TODAY);
+  c[id] = !c[id];
+  saveChecks(TODAY, c);
+  renderChecklist();
+  updateStats();
+}
+
+function renderChecklist() {
+  const c    = getChecks(TODAY);
+  const done = TASKS.filter(t => c[t.id]).length;
+  document.getElementById('checklist').innerHTML =
+    TASKS.map(t => `
+      <div class="check-item${c[t.id] ? ' done' : ''}">
+        <input type="checkbox" id="chk_${t.id}" ${c[t.id] ? 'checked' : ''} onchange="toggleCheck('${t.id}')">
+        <label for="chk_${t.id}">${t.label}</label>
+      </div>`).join('') +
+    (done === TASKS.length ? '<div class="check-done-all">✓ All tasks complete — great work!</div>' : '');
+
+  document.getElementById('progressFill').style.width = (done / TASKS.length * 100) + '%';
+  document.getElementById('progressLabel').textContent = `${done} of ${TASKS.length} complete`;
+  document.getElementById('statTasks').textContent     = `${done}/${TASKS.length}`;
+}
+
+// ── Stats ────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('chk_'));
+  document.getElementById('statDone').textContent = keys.filter(k => {
+    const c = JSON.parse(localStorage.getItem(k));
+    return TASKS.every(t => c[t.id]);
+  }).length;
+
+  let streak = 0;
+  const cur  = new Date(TODAY);
+  while (true) {
+    const ds = cur.toISOString().slice(0, 10);
+    if (TASKS.every(t => LS.get('chk_' + ds, {})[t.id])) { streak++; cur.setDate(cur.getDate() - 1); }
+    else break;
+  }
+  document.getElementById('statStreak').textContent = streak;
+  refreshDayBadge();
+}
+
+// ── Log data ─────────────────────────────────────────────────────────────────
+function getLogs()   { return LS.get('logs', []); }
+function saveLogs(l) { LS.set('logs', l); }
+
+function logMetric(name) {
+  const input = document.getElementById('metric_' + name.replace(/\s+/g, '_'));
+  const val   = parseFloat(input.value);
+  if (isNaN(val)) { toast('Enter a value'); return; }
+  const logs = getLogs().filter(l => !(l.date === TODAY && l.name === name));
+  logs.push({ id: Date.now(), date: TODAY, name, value: val });
+  saveLogs(logs);
+  input.value = '';
+  renderTodayMetricLogs();
+  toast(`Logged ${val} for ${name}`);
+}
+
+function logActivity() {
+  const name = document.getElementById('activitySelect').value;
+  const val  = parseFloat(document.getElementById('activityValue').value);
+  if (!name)      { toast('Select an activity'); return; }
+  if (isNaN(val)) { toast('Enter a value');      return; }
+  const logs = getLogs();
+  logs.push({ id: Date.now(), date: TODAY, name, value: val });
+  saveLogs(logs);
+  document.getElementById('activityValue').value = '';
+  renderTodayActivityLogs();
+  toast(`Logged ${val} for ${name}`);
+}
+
+function deleteLog(id) {
+  saveLogs(getLogs().filter(l => l.id !== id));
+  renderTodayMetricLogs();
+  renderTodayActivityLogs();
+  renderLog();
+}
+
+// ── Today rendering ──────────────────────────────────────────────────────────
+function renderMetricsForm() {
+  const metrics = getByType('metric');
+  document.getElementById('metricsForm').innerHTML = metrics.length
+    ? metrics.map(m => {
+        const id = 'metric_' + m.name.replace(/\s+/g, '_');
+        return `<div class="metric-input-group">
+          <label>${m.name} (${m.unit})</label>
+          <div class="metric-input-row">
+            <input class="bare" type="number" id="${id}" placeholder="—" step="any"
+              onkeydown="if(event.key==='Enter') logMetric(${JSON.stringify(m.name)})">
+            <button class="btn-icon" onclick="logMetric(${JSON.stringify(m.name)})">+</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="hint">No metrics yet — add them in Settings.</div>';
+}
+
+function renderTodayMetricLogs() {
+  const names = new Set(getByType('metric').map(m => m.name));
+  const logs  = getLogs().filter(l => l.date === TODAY && names.has(l.name));
+  document.getElementById('todayMetricLogs').innerHTML = logs.map(l =>
+    `<div class="log-pill">
+      <span style="color:var(--muted)">${l.name}</span>
+      <span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span>
+    </div>`).join('');
+}
+
+function renderTodayActivityLogs() {
+  const names = new Set(getByType('activity').map(a => a.name));
+  const logs  = getLogs().filter(l => l.date === TODAY && names.has(l.name));
+  document.getElementById('todayActivityLogs').innerHTML = logs.map(l =>
+    `<div class="log-pill">
+      <span style="color:var(--muted)">${l.name}</span>
+      <span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span>
+    </div>`).join('');
+}
+
+// ── Selects & tags ───────────────────────────────────────────────────────────
+function refreshActivitySelect() {
+  const acts = getByType('activity');
+  document.getElementById('activitySelect').innerHTML = acts.length
+    ? acts.map(a => `<option value="${esc(a.name)}">${a.name} (${a.unit})</option>`).join('')
+    : '<option value="">No activities yet</option>';
+}
+
+function refreshFilterSelects() {
+  document.getElementById('filterName').innerHTML =
+    '<option value="">All</option>' +
+    getAllItems().map(i => `<option value="${esc(i.name)}">${i.name}</option>`).join('');
+}
+
+function refreshChartSelect() {
+  const m = getByType('metric');
+  const a = getByType('activity');
+  document.getElementById('chartItem').innerHTML =
+    (m.length ? `<optgroup label="Metrics">${m.map(x => `<option value="${esc(x.name)}">${x.name} (${x.unit})</option>`).join('')}</optgroup>` : '') +
+    (a.length ? `<optgroup label="Activities">${a.map(x => `<option value="${esc(x.name)}">${x.name} (${x.unit})</option>`).join('')}</optgroup>` : '') ||
+    '<option value="">No items yet</option>';
+}
+
+function renderSettingsTags() {
+  ['metric', 'activity'].forEach(type => {
+    const id    = type === 'metric' ? 'metricTags' : 'activityTags';
+    const items = getByType(type);
+    document.getElementById(id).innerHTML = items.length
+      ? items.map(i => `
+          <div class="tag">
+            ${i.name} <span class="unit-label">(${i.unit})</span>
+            <span class="rm" onclick="removeItem(${JSON.stringify(i.name)})">×</span>
+          </div>`).join('')
+      : '<span style="color:var(--muted);font-size:0.82rem">None yet.</span>';
+  });
+}
+
+function renderConfigBadges() {
+  const badge = (id, key, label) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const hardcoded = !!CONFIG[key];
+    el.innerHTML = hardcoded
+      ? `<span class="config-badge hardcoded">✓ hardcoded in CONFIG</span>`
+      : `<span class="config-badge manual">set manually below</span>`;
+  };
+  badge('discordBadge', 'discordWebhook');
+  badge('sheetsBadge',  'sheetsUrl');
+
+  const startHint = document.getElementById('startDateHint');
+  if (startHint && CONFIG.startDate) {
+    startHint.innerHTML += ' <span class="config-badge hardcoded" style="margin-left:0">✓ hardcoded</span>';
+  }
+}
+
+// ── Log tab ──────────────────────────────────────────────────────────────────
+function renderLog() {
+  refreshFilterSelects();
+  const typeF = document.getElementById('filterType').value;
+  const nameF = document.getElementById('filterName').value;
+  let logs    = [...getLogs()].reverse();
+  if (typeF) logs = logs.filter(l => typeOf(l.name) === typeF);
+  if (nameF) logs = logs.filter(l => l.name === nameF);
+
+  const body  = document.getElementById('logBody');
+  const empty = document.getElementById('logEmpty');
+  if (!logs.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    body.innerHTML = logs.map(l => {
+      const t = typeOf(l.name);
+      return `<tr>
+        <td>${l.date}</td>
+        <td><span class="type-badge ${t}">${t}</span></td>
+        <td>${l.name}</td>
+        <td>${l.value} <span style="color:var(--muted)">${unitOf(l.name)}</span></td>
+        <td><button class="del-btn" onclick="deleteLog(${l.id})">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  const startRaw = cfg('startDate');
+  const checkKeys = Object.keys(localStorage).filter(k => k.startsWith('chk_')).sort().reverse();
+  const histBody  = document.getElementById('checkHistBody');
+  const histEmpty = document.getElementById('checkHistEmpty');
+  if (!checkKeys.length) {
+    histBody.innerHTML = '';
+    histEmpty.style.display = 'block';
+  } else {
+    histEmpty.style.display = 'none';
+    histBody.innerHTML = checkKeys.map(k => {
+      const date = k.replace('chk_', '');
+      const c    = JSON.parse(localStorage.getItem(k));
+      const done = TASKS.filter(t => c[t.id]).length;
+      const all  = done === TASKS.length;
+      const n    = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '—';
+      return `<tr>
+        <td>${date}</td><td>${n}</td><td>${done}/${TASKS.length}</td>
+        <td class="${all ? 'badge-complete' : 'badge-partial'}">${all ? '✓ Complete' : 'Partial'}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── Charts ───────────────────────────────────────────────────────────────────
+const CHART_BASE = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#888', font: { size: 12 } } } },
+  scales: {
+    x: { ticks: { color: '#666', maxRotation: 45 }, grid: { color: '#222' } },
+    y: { ticks: { color: '#666' },                  grid: { color: '#222' } },
+  },
+};
+
+function renderActivityChart() {
+  const name = document.getElementById('chartItem').value;
+  if (!name) return;
+  const data = getLogs().filter(l => l.name === name).sort((a,b) => a.date.localeCompare(b.date));
+  const ctx  = document.getElementById('actChart').getContext('2d');
+  if (actChartInst) actChartInst.destroy();
+  actChartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(l => l.date),
+      datasets: [{ label: `${name} (${unitOf(name)})`, data: data.map(l => l.value), borderColor: '#e8612a', backgroundColor: 'rgba(232,97,42,0.12)', tension: 0.3, fill: true, pointBackgroundColor: '#e8612a', pointRadius: 5 }],
+    },
+    options: CHART_BASE,
+  });
+}
+
+function renderCompletionChart() {
+  const keys   = Object.keys(localStorage).filter(k => k.startsWith('chk_')).sort();
+  const labels = keys.map(k => k.replace('chk_', ''));
+  const vals   = keys.map(k => { const c = JSON.parse(localStorage.getItem(k)); return TASKS.filter(t => c[t.id]).length; });
+  const ctx    = document.getElementById('compChart').getContext('2d');
+  if (compChartInst) compChartInst.destroy();
+  compChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Tasks Completed', data: vals, backgroundColor: vals.map(v => v === TASKS.length ? '#4caf50' : '#e8612a'), borderRadius: 4 }] },
+    options: { ...CHART_BASE, scales: { ...CHART_BASE.scales, y: { ...CHART_BASE.scales.y, min: 0, max: TASKS.length, ticks: { color: '#666', stepSize: 1 } } } },
+  });
+}
+
+function renderCharts() { refreshChartSelect(); renderActivityChart(); renderCompletionChart(); }
+
+// ── Discord ──────────────────────────────────────────────────────────────────
+async function sendDiscord() {
+  const webhook = cfg('discordWebhook');
+  if (!webhook) { toast('Add Discord webhook URL in Settings (or CONFIG)'); return; }
+
+  const d    = getDayNum();
+  const c    = getChecks(TODAY);
+  const done = TASKS.filter(t => c[t.id]).length;
+  const lbl  = d != null ? `Day ${d}` : 'today';
+  const msg  = done === TASKS.length
+    ? `💪 Cal has completed ${lbl} of Hard75! All ${TASKS.length} tasks done. 🔥`
+    : `Cal has completed ${lbl} of Hard75! (${done}/${TASKS.length} tasks)`;
+
+  await syncBtn('discordBtn', '📣 Post Day Completion to Discord', async () => {
+    const res = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msg }) });
+    if (!res.ok && res.status !== 204) throw new Error(res.status);
+    toast('Posted to Discord!');
+  });
+}
+
+// ── Google Sheets Sync ───────────────────────────────────────────────────────
+async function syncToSheets() {
+  const url = cfg('sheetsUrl');
+  if (!url) { toast('Add Sheets URL in Settings (or CONFIG)'); return; }
+
+  const items    = getAllItems();
+  const dayLogs  = getLogs().filter(l => l.date === TODAY);
+  const c        = getChecks(TODAY);
+  const d        = getDayNum();
+
+  const headers = [
+    'Date', 'Day #',
+    ...items.map(i => `${i.name} (${i.unit})`),
+    'Tasks Complete', 'All Done',
+    ...TASKS.map(t => t.label.split('—')[0].trim()),
+  ];
+  const itemVals  = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length - 1].value : ''; });
+  const tasksDone = TASKS.filter(t => c[t.id]).length;
+  const row       = [TODAY, d ?? '', ...itemVals, tasksDone, tasksDone === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
+
+  await syncBtn('sheetsBtn', '📊 Sync Today to Google Sheets', async () => {
+    // no-cors because Apps Script doesn't return CORS headers on the preflight
+    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: TODAY, headers, row }) });
+    toast('Synced to Google Sheets!');
+  });
+}
+
+// shared button loading helper
+async function syncBtn(id, label, fn) {
+  const btn      = document.getElementById(id);
+  btn.disabled   = true;
+  btn.textContent = 'Working…';
+  try {
+    await fn();
+    btn.textContent = '✓ Done!';
+    setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 3000);
+  } catch {
+    toast('Something went wrong — check your URL');
+    btn.textContent = label;
+    btn.disabled    = false;
+  }
+}
+
+// ── CSV Export ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const items    = getAllItems();
+  const logs     = getLogs();
+  const startRaw = cfg('startDate');
+  const chkDates = Object.keys(localStorage).filter(k => k.startsWith('chk_')).map(k => k.replace('chk_', ''));
+  const allDates = [...new Set([...chkDates, ...logs.map(l => l.date)])].sort();
+  if (!allDates.length) { toast('Nothing to export yet'); return; }
+
+  const headers = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('—')[0].trim())];
+  const rows = allDates.map(date => {
+    const n       = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '';
+    const c       = LS.get('chk_' + date, {});
+    const dayLogs = logs.filter(l => l.date === date);
+    const vals    = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length-1].value : ''; });
+    const done    = TASKS.filter(t => c[t.id]).length;
+    return [date, n, ...vals, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
+  });
+
+  const csv  = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `hard75_${TODAY}.csv` });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded');
+}
+
+// ── Apps Script copy button ───────────────────────────────────────────────────
+function copyScript() {
+  navigator.clipboard.writeText(APPS_SCRIPT).then(() => toast('Copied to clipboard!'));
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'charts')   renderCharts();
+  if (name === 'log')      renderLog();
+  if (name === 'settings') { renderSettingsTags(); renderConfigBadges(); }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function refreshAll() {
+  refreshActivitySelect();
+  refreshChartSelect();
+  renderMetricsForm();
+  renderSettingsTags();
+}
+
+// ── Load settings ────────────────────────────────────────────────────────────
+function loadSettings() {
+  // Show CONFIG values as placeholders, localStorage values as actual content
+  const sd = cfg('startDate');
+  const wh = LS.get('discordWebhook', '');
+  const su = LS.get('sheetsUrl', '');
+  if (sd) document.getElementById('startDate').value    = sd;
+  if (wh) document.getElementById('webhookInput').value = wh;
+  if (su) document.getElementById('sheetsInput').value  = su;
+  document.getElementById('appsScriptCode').textContent = APPS_SCRIPT;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+function init() {
+  loadSettings();
+  refreshAll();
+  renderChecklist();
+  renderTodayMetricLogs();
+  renderTodayActivityLogs();
+  updateStats();
+}
+
+init();
+</script>
+</body>
+</html>
