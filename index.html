@@ -18,6 +18,7 @@
       --danger: #ef5350;
       --discord: #5865F2;
       --sheets: #0f9d58;
+      --water: #2196F3;
     }
     body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
 
@@ -36,55 +37,111 @@
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
     .card-title { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; }
 
+    /* Stats */
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 10px; text-align: center; }
     .stat-value { font-size: 1.7rem; font-weight: 800; color: var(--accent); line-height: 1; }
     .stat-label { font-size: 0.68rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .check-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 8px; cursor: pointer; transition: background 0.1s; margin-bottom: 6px; background: var(--bg); }
+    /* ── Calendar ── */
+    .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px; }
+    .cal-day {
+      aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem; font-weight: 700; border: 2px solid transparent; cursor: default;
+      transition: transform 0.1s;
+    }
+    .cal-day:hover { transform: scale(1.1); }
+    .cal-day.future   { background: var(--bg); color: #333; }
+    .cal-day.empty    { background: var(--bg); color: #555; border-color: var(--border); }
+    .cal-day.failed   { background: rgba(239,83,80,0.2); color: #ef5350; border-color: rgba(239,83,80,0.4); }
+    .cal-day.complete { background: rgba(76,175,80,0.25); color: #4caf50; border-color: rgba(76,175,80,0.5); }
+    .cal-day.today    { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(232,97,42,0.25); }
+    .cal-day.today.future { color: var(--accent); }
+    .cal-legend { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+    .cal-legend span { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .cal-legend .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ── Standard check items ── */
+    .check-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 12px; border-radius: 8px; background: var(--bg); margin-bottom: 6px; transition: background 0.1s; }
     .check-item:hover { background: #1e1e1e; }
-    .check-item.done { opacity: 0.5; }
-    .check-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; flex-shrink: 0; }
-    .check-item label { cursor: pointer; font-size: 0.9rem; line-height: 1.3; }
-    .check-item.done label { text-decoration: line-through; }
+    .check-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+    .check-item label { cursor: pointer; font-size: 0.9rem; line-height: 1.4; flex: 1; }
+    .check-item.done label { text-decoration: line-through; color: var(--muted); }
     .check-done-all { color: var(--success); font-weight: 600; text-align: center; padding: 10px; font-size: 0.9rem; }
 
+    /* ── Workout time tracker ── */
+    .workout-body { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+    .workout-time-row { display: flex; align-items: center; gap: 6px; }
+    .workout-time-label { font-size: 0.75rem; color: var(--muted); flex: 1; }
+    .workout-time-label.met { color: var(--success); }
+    .time-input { width: 56px; padding: 4px 8px; background: var(--border); border: 1px solid #383838; color: var(--text); border-radius: 6px; font-size: 0.82rem; outline: none; }
+    .time-input:focus { border-color: var(--accent); }
+    .time-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 9px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: all 0.1s; }
+    .time-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .time-btn.reset:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Water tracker ── */
+    .water-widget { background: var(--bg); border-radius: 8px; padding: 12px; margin-bottom: 6px; }
+    .water-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
+    .water-header-left { display: flex; align-items: center; gap: 12px; }
+    .water-header input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; flex-shrink: 0; }
+    .water-title { font-size: 0.9rem; line-height: 1.3; }
+    .water-oz-label { font-size: 0.78rem; font-weight: 700; color: var(--water); white-space: nowrap; }
+    .water-oz-label.met { color: var(--success); }
+    .water-bar-wrap { background: var(--border); border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 10px; }
+    .water-bar-fill { background: var(--water); height: 100%; border-radius: 10px; transition: width 0.3s ease; }
+    .water-bar-fill.met { background: var(--success); }
+    .water-btns { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .water-btn { background: rgba(33,150,243,0.15); border: 1px solid rgba(33,150,243,0.3); color: #64b5f6; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: all 0.1s; white-space: nowrap; }
+    .water-btn:hover { background: rgba(33,150,243,0.3); }
+    .water-custom { display: flex; gap: 5px; margin-left: auto; align-items: center; }
+    .water-custom input { width: 52px; padding: 4px 8px; background: var(--border); border: 1px solid #383838; color: var(--text); border-radius: 6px; font-size: 0.82rem; outline: none; }
+    .water-custom input:focus { border-color: var(--water); }
+    .water-custom button { background: rgba(33,150,243,0.2); border: 1px solid rgba(33,150,243,0.4); color: #64b5f6; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
+    .water-reset { background: none; border: none; color: #555; cursor: pointer; font-size: 0.82rem; padding: 4px; margin-left: 2px; }
+    .water-reset:hover { color: var(--danger); }
+
+    /* Progress bar */
     .progress-bar { background: var(--border); border-radius: 20px; height: 7px; overflow: hidden; margin-top: 14px; }
     .progress-fill { background: var(--success); height: 100%; border-radius: 20px; transition: width 0.4s ease; }
     .progress-label { font-size: 0.8rem; color: var(--muted); margin-top: 5px; }
 
+    /* Metrics grid */
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
     .metric-input-group { display: flex; flex-direction: column; gap: 5px; }
     .metric-input-group label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     .metric-input-row { display: flex; gap: 6px; align-items: center; }
     .metric-input-row input { flex: 1; min-width: 0; }
 
+    /* Forms */
     .form-row { display: grid; gap: 10px; align-items: end; }
     .form-row-3 { grid-template-columns: 1fr 1fr auto; }
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     .field input, .field select, input.bare, select.bare { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 0.9rem; outline: none; width: 100%; }
     .field input:focus, .field select:focus, input.bare:focus, select.bare:focus { border-color: var(--accent); }
-    .field input[type="url"], .field input[type="date"] { font-size: 0.85rem; }
 
+    /* Buttons */
     .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.15s; white-space: nowrap; }
-    .btn-primary   { background: var(--accent);   color: white; }
+    .btn-primary   { background: var(--accent); color: white; }
     .btn-primary:hover   { filter: brightness(1.1); }
-    .btn-secondary { background: var(--border);   color: var(--text); }
+    .btn-secondary { background: var(--border); color: var(--text); }
     .btn-secondary:hover { background: #333; }
     .btn-icon { background: var(--accent); color: white; padding: 9px 13px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; line-height: 1; transition: filter 0.15s; flex-shrink: 0; }
     .btn-icon:hover { filter: brightness(1.1); }
 
-    .sync-btn { width: 100%; padding: 13px 20px; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: filter 0.15s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sync-btn { width: 100%; padding: 13px 20px; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: filter 0.15s; margin-top: 8px; }
     .sync-btn:hover:not(:disabled) { filter: brightness(1.1); }
     .sync-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .sync-btn.discord { background: var(--discord); }
     .sync-btn.sheets  { background: var(--sheets); }
 
+    /* Log pills */
     .log-pill { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg); border-radius: 8px; font-size: 0.875rem; margin-bottom: 6px; }
     .log-pill .val  { font-weight: 700; }
     .log-pill .unit { color: var(--muted); font-weight: 400; margin-left: 3px; }
 
+    /* Tables */
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     .data-table th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .data-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
@@ -105,12 +162,9 @@
 
     .hint { font-size: 0.78rem; color: var(--muted); margin-top: 5px; line-height: 1.5; }
 
-    /* Apps Script code block */
     .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.78rem; color: #b0d0b0; overflow-x: auto; white-space: pre; line-height: 1.6; margin-top: 10px; }
-    .copy-btn { background: var(--border); border: none; color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: background 0.15s; }
+    .copy-btn { background: var(--border); border: none; color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
     .copy-btn:hover { background: #444; }
-
-    /* Config notice badge */
     .config-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 10px; margin-left: 8px; }
     .config-badge.hardcoded { background: rgba(15,157,88,0.2); color: #4caf50; }
     .config-badge.manual    { background: rgba(232,97,42,0.15); color: #e8612a; }
@@ -129,6 +183,7 @@
       .form-row-3 { grid-template-columns: 1fr 1fr; }
       .form-row-3 .btn { grid-column: 1 / -1; }
       nav button { font-size: 0.78rem; padding: 12px 10px; }
+      .water-custom { margin-left: 0; }
     }
   </style>
 </head>
@@ -187,18 +242,27 @@
 
   <div class="card">
     <div class="card-title">Share &amp; Sync</div>
-    <button class="sync-btn discord" id="discordBtn" onclick="sendDiscord()">
-      📣 &nbsp;Post Day Completion to Discord
-    </button>
-    <button class="sync-btn sheets" id="sheetsBtn" onclick="syncToSheets()">
-      📊 &nbsp;Sync Today to Google Sheets
-    </button>
+    <button class="sync-btn discord" id="discordBtn" onclick="sendDiscord()">📣 &nbsp;Post Day Completion to Discord</button>
+    <button class="sync-btn sheets"  id="sheetsBtn"  onclick="syncToSheets()">📊 &nbsp;Sync Today to Google Sheets</button>
+    <button class="sync-btn" onclick="resetChallenge()" style="background:#333;color:var(--danger);margin-top:12px;border:1px solid rgba(239,83,80,0.3)">↺ &nbsp;Missed a day — Reset to Day 0</button>
   </div>
 
 </div>
 
 <!-- ── LOG ── -->
 <div id="tab-log" class="tab">
+
+  <!-- Calendar -->
+  <div class="card">
+    <div class="card-title">75-Day Calendar</div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+      <span><span class="dot" style="background:rgba(76,175,80,0.5)"></span>Complete</span>
+      <span><span class="dot" style="background:rgba(239,83,80,0.4)"></span>Failed (reset)</span>
+      <span><span class="dot" style="background:#2a2a2a;border:1px solid #444"></span>No data</span>
+      <span><span class="dot" style="background:#111;border:1px solid #333"></span>Upcoming</span>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title">Activity &amp; Metric History</div>
@@ -257,29 +321,27 @@
       <label>Start Date (Day 0)</label>
       <input type="date" id="startDate" onchange="saveKey('startDate', this.value); refreshDayBadge();">
     </div>
-    <div class="hint" id="startDateHint">Set to today — today becomes Day 0, tomorrow is Day 1, up to Day 75.</div>
+    <div class="hint" id="startDateHint">Today = Day 0, tomorrow = Day 1, up to Day 75.</div>
   </div>
 
   <div class="card">
     <div class="card-title">Discord Webhook <span id="discordBadge"></span></div>
     <div class="field">
-      <label>Webhook URL <span style="color:var(--muted);font-weight:400">(leave blank if hardcoded in CONFIG)</span></label>
+      <label>Webhook URL</label>
       <input type="url" id="webhookInput" placeholder="https://discord.com/api/webhooks/..." onchange="saveKey('discordWebhook', this.value)">
     </div>
-    <div class="hint">Server Settings → Integrations → Webhooks → New Webhook → Copy URL.</div>
+    <div class="hint">Leave blank if hardcoded in CONFIG.</div>
   </div>
 
   <div class="card">
     <div class="card-title">Google Sheets Sync <span id="sheetsBadge"></span></div>
     <div class="field">
-      <label>Apps Script Web App URL <span style="color:var(--muted);font-weight:400">(leave blank if hardcoded in CONFIG)</span></label>
+      <label>Apps Script Web App URL</label>
       <input type="url" id="sheetsInput" placeholder="https://script.google.com/macros/s/..." onchange="saveKey('sheetsUrl', this.value)">
     </div>
-    <div class="hint" style="margin-bottom:12px">
-      One-time setup: open your Google Sheet → <strong>Extensions → Apps Script</strong> → paste the code below → <strong>Deploy → New deployment → Web app</strong> → set "Who has access" to <strong>Anyone</strong> → copy the URL above.
-    </div>
+    <div class="hint" style="margin-bottom:12px">Extensions → Apps Script → paste code below → Deploy → Web app → Anyone → copy URL.</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <span style="font-size:0.78rem;color:var(--muted);font-weight:600">PASTE THIS INTO APPS SCRIPT</span>
+      <span style="font-size:0.78rem;color:var(--muted);font-weight:600">PASTE INTO APPS SCRIPT</span>
       <button class="copy-btn" onclick="copyScript()">Copy</button>
     </div>
     <div class="code-block" id="appsScriptCode"></div>
@@ -313,7 +375,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// CONFIG — fill these in once, every device that loads this page gets them
+// CONFIG — hardcoded, works on every device automatically
 // ═══════════════════════════════════════════════════════════════════════════
 const CONFIG = {
   startDate:      '2026-06-28',
@@ -322,39 +384,38 @@ const CONFIG = {
 };
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ── Storage ──────────────────────────────────────────────────────────────────
 const LS = {
   get(k, def) { try { const v = localStorage.getItem(k); return v != null ? JSON.parse(v) : def; } catch { return def; } },
   set(k, v)   { localStorage.setItem(k, JSON.stringify(v)); },
 };
 function saveKey(k, v) { LS.set(k, v); }
+function cfg(key) {
+  // startDate: localStorage wins (so resets override the hardcoded value)
+  if (key === 'startDate') return LS.get('startDate', '') || CONFIG.startDate || '';
+  return CONFIG[key] || LS.get(key, '');
+}
 
-// CONFIG takes priority; localStorage acts as a per-device override
-function cfg(key) { return CONFIG[key] || LS.get(key, ''); }
-
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Tasks ────────────────────────────────────────────────────────────────────
 const TASKS = [
-  { id: 'w1',      label: 'Workout 1 — 45 minutes' },
-  { id: 'w2',      label: 'Workout 2 — 45 min, must be outdoors' },
-  { id: 'diet',    label: 'Stick to diet (no cheat meals, no alcohol)' },
-  { id: 'water',   label: 'Drink 1 gallon of water' },
-  { id: 'reading', label: 'Read 10 pages of non-fiction' },
-  { id: 'photo',   label: 'Take a progress photo' },
+  { id: 'w1',      label: 'Workout 1',              type: 'workout', targetMin: 45, desc: '45 min' },
+  { id: 'w2',      label: 'Workout 2 (outdoor)',     type: 'workout', targetMin: 45, desc: '45 min outdoors' },
+  { id: 'diet',    label: 'Follow diet',             type: 'check',   desc: 'No cheat meals, no alcohol' },
+  { id: 'water',   label: 'Drink 1 gallon of water', type: 'water',   targetOz: 128 },
+  { id: 'reading', label: 'Read 10 pages',           type: 'check',   desc: 'Non-fiction' },
+  { id: 'photo',   label: 'Take progress photo',     type: 'check',   desc: '' },
 ];
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY        = new Date().toISOString().slice(0, 10);
+let actChartInst   = null;
+let compChartInst  = null;
 
-let actChartInst  = null;
-let compChartInst = null;
-
-// ── Apps Script code (displayed in Settings) ─────────────────────────────────
+// ── Apps Script ──────────────────────────────────────────────────────────────
 const APPS_SCRIPT = `function doPost(e) {
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Hard75') || ss.insertSheet('Hard75');
     var data  = JSON.parse(e.postData.contents);
 
-    // Write header row if sheet is empty
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(data.headers);
       sheet.getRange(1, 1, 1, data.headers.length)
@@ -363,8 +424,7 @@ const APPS_SCRIPT = `function doPost(e) {
            .setFontColor('#ffffff');
     }
 
-    // Update existing row for this date, or append a new one
-    var dates = sheet.getRange('A:A').getValues().map(function(r){ return r[0]; });
+    var dates  = sheet.getRange('A:A').getValues().map(function(r){ return r[0]; });
     var rowIdx = dates.indexOf(data.date);
     if (rowIdx > 0) {
       sheet.getRange(rowIdx + 1, 1, 1, data.row.length).setValues([data.row]);
@@ -393,7 +453,7 @@ function getAllItems() {
     { name: 'Swimming',    unit: 'laps',  type: 'activity' },
   ]);
 }
-function saveAllItems(items) { LS.set('items', items); }
+function saveAllItems(i) { LS.set('items', i); }
 function getByType(type) { return getAllItems().filter(i => i.type === type); }
 function unitOf(name)    { return (getAllItems().find(i => i.name === name) || {}).unit || ''; }
 function typeOf(name)    { return (getAllItems().find(i => i.name === name) || {}).type || 'activity'; }
@@ -433,32 +493,159 @@ function refreshDayBadge() {
   document.getElementById('statLeft').textContent  = d != null ? Math.max(0, 75 - d) : '—';
 }
 
-// ── Checklist ────────────────────────────────────────────────────────────────
+// ── Check state ──────────────────────────────────────────────────────────────
 function getChecks(date) { return LS.get('chk_' + date, {}); }
 function saveChecks(date, c) { LS.set('chk_' + date, c); }
 
-function toggleCheck(id) {
+function setCheck(id, val) {
   const c = getChecks(TODAY);
-  c[id] = !c[id];
+  c[id] = val;
   saveChecks(TODAY, c);
   renderChecklist();
   updateStats();
 }
 
+function toggleCheck(id) {
+  const c = getChecks(TODAY);
+  setCheck(id, !c[id]);
+}
+
+// ── Workout time ─────────────────────────────────────────────────────────────
+function getWorkoutMins(id)    { return LS.get('wt_' + id + '_' + TODAY, 0); }
+function addWorkoutTime(id, targetMin) {
+  const input = document.getElementById('wt_input_' + id);
+  const add   = parseInt(input.value, 10);
+  if (!add || add <= 0) { toast('Enter minutes'); return; }
+  const total = getWorkoutMins(id) + add;
+  LS.set('wt_' + id + '_' + TODAY, total);
+  input.value = '';
+  if (total >= targetMin) setCheck(id, true);
+  else renderChecklist();
+  toast(`${total} min logged for ${id === 'w1' ? 'Workout 1' : 'Workout 2'}`);
+}
+
+function resetWorkoutTime(id) {
+  LS.set('wt_' + id + '_' + TODAY, 0);
+  renderChecklist();
+}
+
+// ── Water ────────────────────────────────────────────────────────────────────
+const GALLON_OZ = 128;
+function getWaterOz()   { return LS.get('water_oz_' + TODAY, 0); }
+function setWaterOz(oz) {
+  LS.set('water_oz_' + TODAY, oz);
+  if (oz >= GALLON_OZ) setCheck('water', true);
+  else renderChecklist();
+}
+function addWater(oz)   { setWaterOz(Math.min(GALLON_OZ, getWaterOz() + oz)); }
+function addWaterCustom() {
+  const v = parseInt(document.getElementById('waterCustomInput').value, 10);
+  if (!v || v <= 0) { toast('Enter oz amount'); return; }
+  document.getElementById('waterCustomInput').value = '';
+  addWater(v);
+}
+function resetWater() { LS.set('water_oz_' + TODAY, 0); renderChecklist(); }
+
+// ── Checklist rendering ──────────────────────────────────────────────────────
+function renderCheckItem(task, c) {
+  const done = !!c[task.id];
+  return `<div class="check-item${done ? '' : ''}">
+    <input type="checkbox" id="chk_${task.id}" ${done ? 'checked' : ''} onchange="toggleCheck('${task.id}')">
+    <label for="chk_${task.id}" style="${done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${task.label}${task.desc ? ` <span style="color:var(--muted);font-size:0.82rem">— ${task.desc}</span>` : ''}</label>
+  </div>`;
+}
+
+function renderWorkoutItem(task, c) {
+  const done  = !!c[task.id];
+  const mins  = getWorkoutMins(task.id);
+  const met   = mins >= task.targetMin;
+  const pct   = Math.min(100, Math.round(mins / task.targetMin * 100));
+  return `<div class="check-item" style="flex-direction:column;align-items:stretch;gap:8px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <input type="checkbox" id="chk_${task.id}" ${done ? 'checked' : ''} onchange="toggleCheck('${task.id}')" style="margin-top:0;flex-shrink:0">
+      <label for="chk_${task.id}" style="${done ? 'text-decoration:line-through;color:var(--muted)' : ''};flex:1">${task.label} <span style="color:var(--muted);font-size:0.82rem">— ${task.desc}</span></label>
+    </div>
+    <div class="workout-time-row" style="padding-left:30px">
+      <span class="workout-time-label${met ? ' met' : ''}">${mins > 0 ? mins + ' / ' + task.targetMin + ' min' : '0 / ' + task.targetMin + ' min'}${met ? ' ✓' : ''}</span>
+      <input type="number" class="time-input" id="wt_input_${task.id}" placeholder="min" min="1" max="300"
+        onkeydown="if(event.key==='Enter') addWorkoutTime('${task.id}', ${task.targetMin})">
+      <button class="time-btn" onclick="addWorkoutTime('${task.id}', ${task.targetMin})">+ Add</button>
+      ${mins > 0 ? `<button class="time-btn reset" onclick="resetWorkoutTime('${task.id}')">↺</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderWaterWidget(c) {
+  const oz   = getWaterOz();
+  const pct  = Math.min(100, Math.round(oz / GALLON_OZ * 100));
+  const done = !!c.water;
+  const met  = oz >= GALLON_OZ;
+  return `<div class="water-widget">
+    <div class="water-header">
+      <div class="water-header-left">
+        <input type="checkbox" id="chk_water" ${done ? 'checked' : ''} onchange="toggleCheck('water')">
+        <label for="chk_water" class="water-title" style="${done && !met ? 'text-decoration:line-through;color:var(--muted)' : ''}">Drink 1 gallon of water</label>
+      </div>
+      <span class="water-oz-label${met ? ' met' : ''}">${oz} / ${GALLON_OZ} oz${met ? ' ✓' : ''}</span>
+    </div>
+    <div class="water-bar-wrap">
+      <div class="water-bar-fill${met ? ' met' : ''}" style="width:${pct}%"></div>
+    </div>
+    <div class="water-btns">
+      ${[8, 16, 20, 32, 40].map(n => `<button class="water-btn" onclick="addWater(${n})">+${n} oz</button>`).join('')}
+      <div class="water-custom">
+        <input type="number" id="waterCustomInput" placeholder="oz" min="1" max="128" onkeydown="if(event.key==='Enter') addWaterCustom()">
+        <button onclick="addWaterCustom()">Add</button>
+        ${oz > 0 ? `<button class="water-reset" onclick="resetWater()" title="Reset">↺</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderChecklist() {
   const c    = getChecks(TODAY);
   const done = TASKS.filter(t => c[t.id]).length;
+
   document.getElementById('checklist').innerHTML =
-    TASKS.map(t => `
-      <div class="check-item${c[t.id] ? ' done' : ''}">
-        <input type="checkbox" id="chk_${t.id}" ${c[t.id] ? 'checked' : ''} onchange="toggleCheck('${t.id}')">
-        <label for="chk_${t.id}">${t.label}</label>
-      </div>`).join('') +
+    TASKS.map(task => {
+      if (task.type === 'workout') return renderWorkoutItem(task, c);
+      if (task.type === 'water')   return renderWaterWidget(c);
+      return renderCheckItem(task, c);
+    }).join('') +
     (done === TASKS.length ? '<div class="check-done-all">✓ All tasks complete — great work!</div>' : '');
 
   document.getElementById('progressFill').style.width = (done / TASKS.length * 100) + '%';
   document.getElementById('progressLabel').textContent = `${done} of ${TASKS.length} complete`;
   document.getElementById('statTasks').textContent     = `${done}/${TASKS.length}`;
+}
+
+// ── Calendar ─────────────────────────────────────────────────────────────────
+function renderCalendar() {
+  const start = cfg('startDate');
+  const grid  = document.getElementById('calGrid');
+  if (!start) { grid.innerHTML = '<div class="hint">Set your start date in Settings to see the calendar.</div>'; return; }
+
+  const startDate = new Date(start + 'T00:00:00');
+  let html = '';
+
+  for (let day = 0; day <= 75; day++) {
+    const d   = new Date(startDate);
+    d.setDate(d.getDate() + day);
+    const ds  = d.toISOString().slice(0, 10);
+    const isToday  = ds === TODAY;
+    const isFuture = ds > TODAY;
+
+    let cls = 'future';
+    if (!isFuture) {
+      const c    = LS.get('chk_' + ds, {});
+      const done = TASKS.filter(t => c[t.id]).length;
+      cls = done === TASKS.length ? 'complete' : done > 0 ? 'failed' : 'empty';
+    }
+    if (isToday) cls += ' today';
+
+    html += `<div class="cal-day ${cls}" title="Day ${day} · ${ds}">${day}</div>`;
+  }
+  grid.innerHTML = html;
 }
 
 // ── Stats ────────────────────────────────────────────────────────────────────
@@ -473,8 +660,7 @@ function updateStats() {
   const cur  = new Date(TODAY);
   while (true) {
     const ds = cur.toISOString().slice(0, 10);
-    if (TASKS.every(t => LS.get('chk_' + ds, {})[t.id])) { streak++; cur.setDate(cur.getDate() - 1); }
-    else break;
+    if (TASKS.every(t => LS.get('chk_' + ds, {})[t.id])) { streak++; cur.setDate(cur.getDate() - 1); } else break;
   }
   document.getElementById('statStreak').textContent = streak;
   refreshDayBadge();
@@ -538,20 +724,16 @@ function renderTodayMetricLogs() {
   const names = new Set(getByType('metric').map(m => m.name));
   const logs  = getLogs().filter(l => l.date === TODAY && names.has(l.name));
   document.getElementById('todayMetricLogs').innerHTML = logs.map(l =>
-    `<div class="log-pill">
-      <span style="color:var(--muted)">${l.name}</span>
-      <span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span>
-    </div>`).join('');
+    `<div class="log-pill"><span style="color:var(--muted)">${l.name}</span><span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span></div>`
+  ).join('');
 }
 
 function renderTodayActivityLogs() {
   const names = new Set(getByType('activity').map(a => a.name));
   const logs  = getLogs().filter(l => l.date === TODAY && names.has(l.name));
   document.getElementById('todayActivityLogs').innerHTML = logs.map(l =>
-    `<div class="log-pill">
-      <span style="color:var(--muted)">${l.name}</span>
-      <span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span>
-    </div>`).join('');
+    `<div class="log-pill"><span style="color:var(--muted)">${l.name}</span><span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span></div>`
+  ).join('');
 }
 
 // ── Selects & tags ───────────────────────────────────────────────────────────
@@ -569,8 +751,7 @@ function refreshFilterSelects() {
 }
 
 function refreshChartSelect() {
-  const m = getByType('metric');
-  const a = getByType('activity');
+  const m = getByType('metric'), a = getByType('activity');
   document.getElementById('chartItem').innerHTML =
     (m.length ? `<optgroup label="Metrics">${m.map(x => `<option value="${esc(x.name)}">${x.name} (${x.unit})</option>`).join('')}</optgroup>` : '') +
     (a.length ? `<optgroup label="Activities">${a.map(x => `<option value="${esc(x.name)}">${x.name} (${x.unit})</option>`).join('')}</optgroup>` : '') ||
@@ -582,35 +763,24 @@ function renderSettingsTags() {
     const id    = type === 'metric' ? 'metricTags' : 'activityTags';
     const items = getByType(type);
     document.getElementById(id).innerHTML = items.length
-      ? items.map(i => `
-          <div class="tag">
-            ${i.name} <span class="unit-label">(${i.unit})</span>
-            <span class="rm" onclick="removeItem(${JSON.stringify(i.name)})">×</span>
-          </div>`).join('')
+      ? items.map(i => `<div class="tag">${i.name} <span class="unit-label">(${i.unit})</span><span class="rm" onclick="removeItem(${JSON.stringify(i.name)})">×</span></div>`).join('')
       : '<span style="color:var(--muted);font-size:0.82rem">None yet.</span>';
   });
 }
 
 function renderConfigBadges() {
-  const badge = (id, key, label) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const hardcoded = !!CONFIG[key];
-    el.innerHTML = hardcoded
-      ? `<span class="config-badge hardcoded">✓ hardcoded in CONFIG</span>`
-      : `<span class="config-badge manual">set manually below</span>`;
-  };
-  badge('discordBadge', 'discordWebhook');
-  badge('sheetsBadge',  'sheetsUrl');
-
-  const startHint = document.getElementById('startDateHint');
-  if (startHint && CONFIG.startDate) {
-    startHint.innerHTML += ' <span class="config-badge hardcoded" style="margin-left:0">✓ hardcoded</span>';
-  }
+  ['discordBadge', 'sheetsBadge'].forEach((elId, i) => {
+    const key = i === 0 ? 'discordWebhook' : 'sheetsUrl';
+    const el  = document.getElementById(elId);
+    if (el) el.innerHTML = CONFIG[key]
+      ? '<span class="config-badge hardcoded">✓ hardcoded</span>'
+      : '<span class="config-badge manual">set below</span>';
+  });
 }
 
 // ── Log tab ──────────────────────────────────────────────────────────────────
 function renderLog() {
+  renderCalendar();
   refreshFilterSelects();
   const typeF = document.getElementById('filterType').value;
   const nameF = document.getElementById('filterName').value;
@@ -620,10 +790,8 @@ function renderLog() {
 
   const body  = document.getElementById('logBody');
   const empty = document.getElementById('logEmpty');
-  if (!logs.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-  } else {
+  if (!logs.length) { body.innerHTML = ''; empty.style.display = 'block'; }
+  else {
     empty.style.display = 'none';
     body.innerHTML = logs.map(l => {
       const t = typeOf(l.name);
@@ -637,14 +805,12 @@ function renderLog() {
     }).join('');
   }
 
-  const startRaw = cfg('startDate');
+  const startRaw  = cfg('startDate');
   const checkKeys = Object.keys(localStorage).filter(k => k.startsWith('chk_')).sort().reverse();
   const histBody  = document.getElementById('checkHistBody');
   const histEmpty = document.getElementById('checkHistEmpty');
-  if (!checkKeys.length) {
-    histBody.innerHTML = '';
-    histEmpty.style.display = 'block';
-  } else {
+  if (!checkKeys.length) { histBody.innerHTML = ''; histEmpty.style.display = 'block'; }
+  else {
     histEmpty.style.display = 'none';
     histBody.innerHTML = checkKeys.map(k => {
       const date = k.replace('chk_', '');
@@ -652,10 +818,7 @@ function renderLog() {
       const done = TASKS.filter(t => c[t.id]).length;
       const all  = done === TASKS.length;
       const n    = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '—';
-      return `<tr>
-        <td>${date}</td><td>${n}</td><td>${done}/${TASKS.length}</td>
-        <td class="${all ? 'badge-complete' : 'badge-partial'}">${all ? '✓ Complete' : 'Partial'}</td>
-      </tr>`;
+      return `<tr><td>${date}</td><td>${n}</td><td>${done}/${TASKS.length}</td><td class="${all ? 'badge-complete' : 'badge-partial'}">${all ? '✓ Complete' : 'Partial'}</td></tr>`;
     }).join('');
   }
 }
@@ -666,7 +829,7 @@ const CHART_BASE = {
   plugins: { legend: { labels: { color: '#888', font: { size: 12 } } } },
   scales: {
     x: { ticks: { color: '#666', maxRotation: 45 }, grid: { color: '#222' } },
-    y: { ticks: { color: '#666' },                  grid: { color: '#222' } },
+    y: { ticks: { color: '#666' }, grid: { color: '#222' } },
   },
 };
 
@@ -678,10 +841,7 @@ function renderActivityChart() {
   if (actChartInst) actChartInst.destroy();
   actChartInst = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels: data.map(l => l.date),
-      datasets: [{ label: `${name} (${unitOf(name)})`, data: data.map(l => l.value), borderColor: '#e8612a', backgroundColor: 'rgba(232,97,42,0.12)', tension: 0.3, fill: true, pointBackgroundColor: '#e8612a', pointRadius: 5 }],
-    },
+    data: { labels: data.map(l => l.date), datasets: [{ label: `${name} (${unitOf(name)})`, data: data.map(l => l.value), borderColor: '#e8612a', backgroundColor: 'rgba(232,97,42,0.12)', tension: 0.3, fill: true, pointBackgroundColor: '#e8612a', pointRadius: 5 }] },
     options: CHART_BASE,
   });
 }
@@ -704,15 +864,14 @@ function renderCharts() { refreshChartSelect(); renderActivityChart(); renderCom
 // ── Discord ──────────────────────────────────────────────────────────────────
 async function sendDiscord() {
   const webhook = cfg('discordWebhook');
-  if (!webhook) { toast('Add Discord webhook URL in Settings (or CONFIG)'); return; }
-
+  if (!webhook) { toast('Add Discord webhook URL in Settings'); return; }
   const d    = getDayNum();
   const c    = getChecks(TODAY);
   const done = TASKS.filter(t => c[t.id]).length;
   const lbl  = d != null ? `Day ${d}` : 'today';
   const msg  = done === TASKS.length
     ? `💪 Cal has completed ${lbl} of Hard75! All ${TASKS.length} tasks done. 🔥`
-    : `Cal has completed ${lbl} of Hard75! (${done}/${TASKS.length} tasks)`;
+    : `❌ Cal did NOT complete ${lbl} of Hard75. (${done}/${TASKS.length} tasks done — back to Day 0)`;
 
   await syncBtn('discordBtn', '📣 Post Day Completion to Discord', async () => {
     const res = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: msg }) });
@@ -721,46 +880,35 @@ async function sendDiscord() {
   });
 }
 
-// ── Google Sheets Sync ───────────────────────────────────────────────────────
+// ── Sheets ───────────────────────────────────────────────────────────────────
 async function syncToSheets() {
   const url = cfg('sheetsUrl');
-  if (!url) { toast('Add Sheets URL in Settings (or CONFIG)'); return; }
-
-  const items    = getAllItems();
-  const dayLogs  = getLogs().filter(l => l.date === TODAY);
-  const c        = getChecks(TODAY);
-  const d        = getDayNum();
-
-  const headers = [
-    'Date', 'Day #',
-    ...items.map(i => `${i.name} (${i.unit})`),
-    'Tasks Complete', 'All Done',
-    ...TASKS.map(t => t.label.split('—')[0].trim()),
-  ];
-  const itemVals  = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length - 1].value : ''; });
-  const tasksDone = TASKS.filter(t => c[t.id]).length;
-  const row       = [TODAY, d ?? '', ...itemVals, tasksDone, tasksDone === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
+  if (!url) { toast('Add Sheets URL in Settings'); return; }
+  const items   = getAllItems();
+  const dayLogs = getLogs().filter(l => l.date === TODAY);
+  const c       = getChecks(TODAY);
+  const d       = getDayNum();
+  const headers = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('(')[0].trim())];
+  const vals    = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length-1].value : ''; });
+  const done    = TASKS.filter(t => c[t.id]).length;
+  const row     = [TODAY, d ?? '', ...vals, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
 
   await syncBtn('sheetsBtn', '📊 Sync Today to Google Sheets', async () => {
-    // no-cors because Apps Script doesn't return CORS headers on the preflight
     await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: TODAY, headers, row }) });
     toast('Synced to Google Sheets!');
   });
 }
 
-// shared button loading helper
 async function syncBtn(id, label, fn) {
-  const btn      = document.getElementById(id);
-  btn.disabled   = true;
-  btn.textContent = 'Working…';
+  const btn = document.getElementById(id);
+  btn.disabled = true; btn.textContent = 'Working…';
   try {
     await fn();
     btn.textContent = '✓ Done!';
     setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 3000);
   } catch {
     toast('Something went wrong — check your URL');
-    btn.textContent = label;
-    btn.disabled    = false;
+    btn.textContent = label; btn.disabled = false;
   }
 }
 
@@ -773,14 +921,15 @@ function exportCSV() {
   const allDates = [...new Set([...chkDates, ...logs.map(l => l.date)])].sort();
   if (!allDates.length) { toast('Nothing to export yet'); return; }
 
-  const headers = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('—')[0].trim())];
+  const headers = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Water (oz)', 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('(')[0].trim())];
   const rows = allDates.map(date => {
     const n       = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '';
     const c       = LS.get('chk_' + date, {});
     const dayLogs = logs.filter(l => l.date === date);
     const vals    = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length-1].value : ''; });
+    const waterOz = LS.get('water_oz_' + date, 0);
     const done    = TASKS.filter(t => c[t.id]).length;
-    return [date, n, ...vals, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
+    return [date, n, ...vals, waterOz, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
   });
 
   const csv  = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
@@ -792,9 +941,19 @@ function exportCSV() {
   toast('CSV downloaded');
 }
 
-// ── Apps Script copy button ───────────────────────────────────────────────────
+function resetChallenge() {
+  if (!confirm('Reset challenge to Day 0?\n\nThis sets today as your new start date. Past data is kept.')) return;
+  LS.set('startDate', TODAY);
+  const el = document.getElementById('startDate');
+  if (el) el.value = TODAY;
+  refreshDayBadge();
+  renderChecklist();
+  updateStats();
+  toast('Challenge reset — today is Day 0');
+}
+
 function copyScript() {
-  navigator.clipboard.writeText(APPS_SCRIPT).then(() => toast('Copied to clipboard!'));
+  navigator.clipboard.writeText(APPS_SCRIPT).then(() => toast('Copied!'));
 }
 
 // ── Tab switching ────────────────────────────────────────────────────────────
@@ -818,19 +977,14 @@ function refreshAll() {
   renderSettingsTags();
 }
 
-// ── Load settings ────────────────────────────────────────────────────────────
 function loadSettings() {
-  // Show CONFIG values as placeholders, localStorage values as actual content
-  const sd = cfg('startDate');
-  const wh = LS.get('discordWebhook', '');
-  const su = LS.get('sheetsUrl', '');
+  const sd = cfg('startDate'), wh = LS.get('discordWebhook',''), su = LS.get('sheetsUrl','');
   if (sd) document.getElementById('startDate').value    = sd;
   if (wh) document.getElementById('webhookInput').value = wh;
   if (su) document.getElementById('sheetsInput').value  = su;
   document.getElementById('appsScriptCode').textContent = APPS_SCRIPT;
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
 function init() {
   loadSettings();
   refreshAll();
