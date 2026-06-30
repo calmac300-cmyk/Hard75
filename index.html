@@ -244,7 +244,8 @@
     <div class="card-title">Share &amp; Sync</div>
     <button class="sync-btn discord" id="discordBtn" onclick="sendDiscord()">📣 &nbsp;Post Day Completion to Discord</button>
     <button class="sync-btn sheets"  id="sheetsBtn"  onclick="syncToSheets()">📊 &nbsp;Sync Today to Google Sheets</button>
-    <button class="sync-btn" onclick="resetChallenge()" style="background:#333;color:var(--danger);margin-top:12px;border:1px solid rgba(239,83,80,0.3)">↺ &nbsp;Missed a day — Reset to Day 0</button>
+    <button class="sync-btn" onclick="syncAllHistory()" style="background:#333;color:#4caf50;margin-top:12px;border:1px solid rgba(76,175,80,0.3)" id="syncAllBtn">📋 &nbsp;Sync All History to Google Sheets</button>
+    <button class="sync-btn" onclick="resetChallenge()" style="background:#333;color:var(--danger);margin-top:8px;border:1px solid rgba(239,83,80,0.3)">↺ &nbsp;Missed a day — Reset to Day 1</button>
   </div>
 
 </div>
@@ -405,7 +406,10 @@ const TASKS = [
   { id: 'photo',   label: 'Take progress photo',     type: 'check',   desc: '' },
 ];
 
-const TODAY        = new Date().toISOString().slice(0, 10);
+const TODAY = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+})();
 let actChartInst   = null;
 let compChartInst  = null;
 
@@ -628,7 +632,7 @@ function renderCalendar() {
   const startDate = new Date(start + 'T00:00:00');
   let html = '';
 
-  for (let day = 0; day <= 75; day++) {
+  for (let day = 1; day <= 75; day++) {
     const d   = new Date(startDate);
     d.setDate(d.getDate() + day);
     const ds  = d.toISOString().slice(0, 10);
@@ -899,6 +903,45 @@ async function syncToSheets() {
   });
 }
 
+async function syncAllHistory() {
+  const url = cfg('sheetsUrl');
+  if (!url) { toast('Add Sheets URL in Settings'); return; }
+
+  const items    = getAllItems();
+  const logs     = getLogs();
+  const startRaw = cfg('startDate');
+  const headers  = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('(')[0].trim())];
+
+  const chkDates = Object.keys(localStorage).filter(k => k.startsWith('chk_')).map(k => k.replace('chk_', ''));
+  const logDates = logs.map(l => l.date);
+  const allDates = [...new Set([...chkDates, ...logDates])].sort();
+
+  if (!allDates.length) { toast('No data to sync yet'); return; }
+
+  const btn = document.getElementById('syncAllBtn');
+  btn.disabled = true;
+  btn.textContent = `Syncing 0 / ${allDates.length}…`;
+
+  let sent = 0;
+  for (const date of allDates) {
+    const n       = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '';
+    const c       = LS.get('chk_' + date, {});
+    const dayLogs = logs.filter(l => l.date === date);
+    const vals    = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length-1].value : ''; });
+    const done    = TASKS.filter(t => c[t.id]).length;
+    const row     = [date, n, ...vals, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
+    try {
+      await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date, headers, row }) });
+    } catch { /* no-cors responses always throw, treat as success */ }
+    sent++;
+    btn.textContent = `Syncing ${sent} / ${allDates.length}…`;
+  }
+
+  toast(`Synced ${allDates.length} day${allDates.length !== 1 ? 's' : ''} to Google Sheets!`);
+  btn.textContent = '✓ All synced!';
+  setTimeout(() => { btn.textContent = '📋 Sync All History to Google Sheets'; btn.disabled = false; }, 3000);
+}
+
 async function syncBtn(id, label, fn) {
   const btn = document.getElementById(id);
   btn.disabled = true; btn.textContent = 'Working…';
@@ -942,14 +985,18 @@ function exportCSV() {
 }
 
 function resetChallenge() {
-  if (!confirm('Reset challenge to Day 0?\n\nThis sets today as your new start date. Past data is kept.')) return;
-  LS.set('startDate', TODAY);
+  if (!confirm('Reset challenge to Day 1?\n\nToday becomes Day 1. Past data is kept.')) return;
+  // Set startDate to yesterday so today = Day 1 (diff of 1)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const newStart = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+  LS.set('startDate', newStart);
   const el = document.getElementById('startDate');
-  if (el) el.value = TODAY;
+  if (el) el.value = newStart;
   refreshDayBadge();
   renderChecklist();
   updateStats();
-  toast('Challenge reset — today is Day 0');
+  toast('Challenge reset — today is Day 1');
 }
 
 function copyScript() {
