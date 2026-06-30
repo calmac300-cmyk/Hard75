@@ -451,21 +451,40 @@ const APPS_SCRIPT = `function doPost(e) {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Hard75') || ss.insertSheet('Hard75');
     var data  = JSON.parse(e.postData.contents);
+    // data.row is now an object: { "Date": "2026-06-29", "Weight (lbs)": 185, ... }
 
+    // Build or update header row — adds new columns if metrics were added later
+    var headers;
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(data.headers);
-      sheet.getRange(1, 1, 1, data.headers.length)
-           .setFontWeight('bold')
-           .setBackground('#e8612a')
-           .setFontColor('#ffffff');
+      headers = Object.keys(data.row);
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length)
+           .setFontWeight('bold').setBackground('#e8612a').setFontColor('#ffffff');
+    } else {
+      headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      // Add any columns that don't exist yet
+      Object.keys(data.row).forEach(function(col) {
+        if (headers.indexOf(col) === -1) {
+          headers.push(col);
+          var newCol = headers.length;
+          sheet.getRange(1, newCol).setValue(col)
+               .setFontWeight('bold').setBackground('#e8612a').setFontColor('#ffffff');
+        }
+      });
     }
 
+    // Map values to correct column positions by name
+    var rowValues = headers.map(function(h) {
+      return data.row.hasOwnProperty(h) ? data.row[h] : '';
+    });
+
+    // Update existing row for this date, or append
     var dates  = sheet.getRange('A:A').getValues().map(function(r){ return r[0]; });
     var rowIdx = dates.indexOf(data.date);
     if (rowIdx > 0) {
-      sheet.getRange(rowIdx + 1, 1, 1, data.row.length).setValues([data.row]);
+      sheet.getRange(rowIdx + 1, 1, 1, rowValues.length).setValues([rowValues]);
     } else {
-      sheet.appendRow(data.row);
+      sheet.appendRow(rowValues);
     }
 
     return ContentService
@@ -917,20 +936,30 @@ async function sendDiscord() {
 }
 
 // ── Sheets ───────────────────────────────────────────────────────────────────
+function buildSheetRow(date, allLogs, startRaw) {
+  const items   = getAllItems();
+  const dayLogs = allLogs.filter(l => l.date === date);
+  const c       = LS.get('chk_' + date, {});
+  const n       = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '';
+  const done    = TASKS.filter(t => c[t.id]).length;
+  const row     = { 'Date': date, 'Day #': n };
+  items.forEach(i => {
+    const e = dayLogs.filter(l => l.name === i.name);
+    row[`${i.name} (${i.unit})`] = e.length ? e[e.length - 1].value : '';
+  });
+  row['Tasks Complete'] = done;
+  row['All Done']       = done === TASKS.length ? 'Yes' : 'No';
+  TASKS.forEach(t => { row[t.label.split('(')[0].trim()] = c[t.id] ? 1 : 0; });
+  return row;
+}
+
 async function syncToSheets() {
   const url = cfg('sheetsUrl');
   if (!url) { toast('Add Sheets URL in Settings'); return; }
-  const items   = getAllItems();
-  const dayLogs = getLogs().filter(l => l.date === TODAY);
-  const c       = getChecks(TODAY);
-  const d       = getDayNum();
-  const headers = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('(')[0].trim())];
-  const vals    = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length-1].value : ''; });
-  const done    = TASKS.filter(t => c[t.id]).length;
-  const row     = [TODAY, d ?? '', ...vals, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
-
-  await syncBtn('sheetsBtn', '📊 Sync Today to Google Sheets', async () => {
-    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: TODAY, headers, row }) });
+  const row      = buildSheetRow(logDate, getLogs(), cfg('startDate'));
+  const label    = logDate === TODAY ? '📊 Sync Today to Google Sheets' : `📊 Sync ${logDate} to Google Sheets`;
+  await syncBtn('sheetsBtn', label, async () => {
+    await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: logDate, row }) });
     toast('Synced to Google Sheets!');
   });
 }
@@ -939,32 +968,23 @@ async function syncAllHistory() {
   const url = cfg('sheetsUrl');
   if (!url) { toast('Add Sheets URL in Settings'); return; }
 
-  const items    = getAllItems();
   const logs     = getLogs();
   const startRaw = cfg('startDate');
-  const headers  = ['Date', 'Day #', ...items.map(i => `${i.name} (${i.unit})`), 'Tasks Complete', 'All Done', ...TASKS.map(t => t.label.split('(')[0].trim())];
-
   const chkDates = Object.keys(localStorage).filter(k => k.startsWith('chk_')).map(k => k.replace('chk_', ''));
-  const logDates = logs.map(l => l.date);
-  const allDates = [...new Set([...chkDates, ...logDates])].sort();
+  const allDates = [...new Set([...chkDates, ...logs.map(l => l.date)])].sort();
 
   if (!allDates.length) { toast('No data to sync yet'); return; }
 
   const btn = document.getElementById('syncAllBtn');
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = `Syncing 0 / ${allDates.length}…`;
 
   let sent = 0;
   for (const date of allDates) {
-    const n       = startRaw ? Math.max(0, Math.round((new Date(date) - new Date(startRaw)) / 86400000)) : '';
-    const c       = LS.get('chk_' + date, {});
-    const dayLogs = logs.filter(l => l.date === date);
-    const vals    = items.map(i => { const e = dayLogs.filter(l => l.name === i.name); return e.length ? e[e.length-1].value : ''; });
-    const done    = TASKS.filter(t => c[t.id]).length;
-    const row     = [date, n, ...vals, done, done === TASKS.length ? 'Yes' : 'No', ...TASKS.map(t => c[t.id] ? 1 : 0)];
+    const row = buildSheetRow(date, logs, startRaw);
     try {
-      await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date, headers, row }) });
-    } catch { /* no-cors responses always throw, treat as success */ }
+      await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date, row }) });
+    } catch { /* no-cors fetch always throws — treat as sent */ }
     sent++;
     btn.textContent = `Syncing ${sent} / ${allDates.length}…`;
   }
