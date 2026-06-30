@@ -211,6 +211,14 @@
     <div class="stat-card"><div class="stat-value" id="statLeft">—</div><div class="stat-label">Days Left</div></div>
   </div>
 
+  <!-- Past-day editor bar -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+    <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap">Editing:</span>
+    <input type="date" id="logDateInput" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:0.85rem;outline:none;flex:1" onchange="setLogDate(this.value)">
+    <button onclick="setLogDate(TODAY)" style="background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:0.78rem;font-weight:600;white-space:nowrap">Today</button>
+  </div>
+  <div id="logDateBanner" style="display:none;background:rgba(232,97,42,0.12);border:1px solid rgba(232,97,42,0.3);color:var(--accent);padding:8px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;margin-bottom:12px;align-items:center;gap:8px">📅</div>
+
   <div class="card">
     <div class="card-title">Hard75 Checklist</div>
     <div id="checklist"></div>
@@ -412,6 +420,30 @@ const TODAY = (() => {
 })();
 let actChartInst   = null;
 let compChartInst  = null;
+let logDate        = TODAY; // can be changed to edit past days
+
+function setLogDate(date) {
+  logDate = date || TODAY;
+  const banner = document.getElementById('logDateBanner');
+  const input  = document.getElementById('logDateInput');
+  if (input) input.value = logDate;
+  if (banner) {
+    if (logDate === TODAY) {
+      banner.style.display = 'none';
+    } else {
+      const dayNum = (() => {
+        const start = cfg('startDate');
+        if (!start) return null;
+        return Math.max(0, Math.round((new Date(logDate) - new Date(start)) / 86400000));
+      })();
+      banner.style.display = 'flex';
+      banner.textContent   = `Editing Day ${dayNum ?? '?'} — ${logDate}`;
+    }
+  }
+  renderChecklist();
+  renderTodayMetricLogs();
+  renderTodayActivityLogs();
+}
 
 // ── Apps Script ──────────────────────────────────────────────────────────────
 const APPS_SCRIPT = `function doPost(e) {
@@ -502,26 +534,26 @@ function getChecks(date) { return LS.get('chk_' + date, {}); }
 function saveChecks(date, c) { LS.set('chk_' + date, c); }
 
 function setCheck(id, val) {
-  const c = getChecks(TODAY);
+  const c = getChecks(logDate);
   c[id] = val;
-  saveChecks(TODAY, c);
+  saveChecks(logDate, c);
   renderChecklist();
   updateStats();
 }
 
 function toggleCheck(id) {
-  const c = getChecks(TODAY);
+  const c = getChecks(logDate);
   setCheck(id, !c[id]);
 }
 
 // ── Workout time ─────────────────────────────────────────────────────────────
-function getWorkoutMins(id)    { return LS.get('wt_' + id + '_' + TODAY, 0); }
+function getWorkoutMins(id)    { return LS.get('wt_' + id + '_' + logDate, 0); }
 function addWorkoutTime(id, targetMin) {
   const input = document.getElementById('wt_input_' + id);
   const add   = parseInt(input.value, 10);
   if (!add || add <= 0) { toast('Enter minutes'); return; }
   const total = getWorkoutMins(id) + add;
-  LS.set('wt_' + id + '_' + TODAY, total);
+  LS.set('wt_' + id + '_' + logDate, total);
   input.value = '';
   if (total >= targetMin) setCheck(id, true);
   else renderChecklist();
@@ -529,15 +561,15 @@ function addWorkoutTime(id, targetMin) {
 }
 
 function resetWorkoutTime(id) {
-  LS.set('wt_' + id + '_' + TODAY, 0);
+  LS.set('wt_' + id + '_' + logDate, 0);
   renderChecklist();
 }
 
 // ── Water ────────────────────────────────────────────────────────────────────
 const GALLON_OZ = 128;
-function getWaterOz()   { return LS.get('water_oz_' + TODAY, 0); }
+function getWaterOz()   { return LS.get('water_oz_' + logDate, 0); }
 function setWaterOz(oz) {
-  LS.set('water_oz_' + TODAY, oz);
+  LS.set('water_oz_' + logDate, oz);
   if (oz >= GALLON_OZ) setCheck('water', true);
   else renderChecklist();
 }
@@ -548,7 +580,7 @@ function addWaterCustom() {
   document.getElementById('waterCustomInput').value = '';
   addWater(v);
 }
-function resetWater() { LS.set('water_oz_' + TODAY, 0); renderChecklist(); }
+function resetWater() { LS.set('water_oz_' + logDate, 0); renderChecklist(); }
 
 // ── Checklist rendering ──────────────────────────────────────────────────────
 function renderCheckItem(task, c) {
@@ -607,7 +639,7 @@ function renderWaterWidget(c) {
 }
 
 function renderChecklist() {
-  const c    = getChecks(TODAY);
+  const c    = getChecks(logDate);
   const done = TASKS.filter(t => c[t.id]).length;
 
   document.getElementById('checklist').innerHTML =
@@ -678,8 +710,8 @@ function logMetric(name) {
   const input = document.getElementById('metric_' + name.replace(/\s+/g, '_'));
   const val   = parseFloat(input.value);
   if (isNaN(val)) { toast('Enter a value'); return; }
-  const logs = getLogs().filter(l => !(l.date === TODAY && l.name === name));
-  logs.push({ id: Date.now(), date: TODAY, name, value: val });
+  const logs = getLogs().filter(l => !(l.date === logDate && l.name === name));
+  logs.push({ id: Date.now(), date: logDate, name, value: val });
   saveLogs(logs);
   input.value = '';
   renderTodayMetricLogs();
@@ -692,7 +724,7 @@ function logActivity() {
   if (!name)      { toast('Select an activity'); return; }
   if (isNaN(val)) { toast('Enter a value');      return; }
   const logs = getLogs();
-  logs.push({ id: Date.now(), date: TODAY, name, value: val });
+  logs.push({ id: Date.now(), date: logDate, name, value: val });
   saveLogs(logs);
   document.getElementById('activityValue').value = '';
   renderTodayActivityLogs();
@@ -726,7 +758,7 @@ function renderMetricsForm() {
 
 function renderTodayMetricLogs() {
   const names = new Set(getByType('metric').map(m => m.name));
-  const logs  = getLogs().filter(l => l.date === TODAY && names.has(l.name));
+  const logs  = getLogs().filter(l => l.date === logDate && names.has(l.name));
   document.getElementById('todayMetricLogs').innerHTML = logs.map(l =>
     `<div class="log-pill"><span style="color:var(--muted)">${l.name}</span><span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span></div>`
   ).join('');
@@ -734,7 +766,7 @@ function renderTodayMetricLogs() {
 
 function renderTodayActivityLogs() {
   const names = new Set(getByType('activity').map(a => a.name));
-  const logs  = getLogs().filter(l => l.date === TODAY && names.has(l.name));
+  const logs  = getLogs().filter(l => l.date === logDate && names.has(l.name));
   document.getElementById('todayActivityLogs').innerHTML = logs.map(l =>
     `<div class="log-pill"><span style="color:var(--muted)">${l.name}</span><span class="val">${l.value}<span class="unit"> ${unitOf(l.name)}</span></span></div>`
   ).join('');
@@ -1035,6 +1067,8 @@ function loadSettings() {
 function init() {
   loadSettings();
   refreshAll();
+  const dateInput = document.getElementById('logDateInput');
+  if (dateInput) dateInput.value = TODAY;
   renderChecklist();
   renderTodayMetricLogs();
   renderTodayActivityLogs();
